@@ -7,6 +7,28 @@ services:
       - '27017:27017'
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build: .
+    image: api-restful-favoritos
+    container_name: favoritos-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 5000
+      # "mongo" es el nombre del servicio dentro de la red de Docker.
+      MONGODB_URI: mongodb://mongo:27017/bookmarks
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - '5000:5000'
 
 volumes:
   mongo-data:

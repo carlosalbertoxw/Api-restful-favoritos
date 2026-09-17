@@ -25,7 +25,10 @@ export const openapiSpec = {
     description: 'API para guardar páginas favoritas (marcadores).',
   },
   servers: [{ url: `http://localhost:${config.port}`, description: 'Servidor local' }],
-  tags: [{ name: 'Favoritos', description: 'Gestión de marcadores' }],
+  tags: [
+    { name: 'Favoritos', description: 'Gestión de marcadores' },
+    { name: 'Salud', description: 'Healthchecks del servicio' },
+  ],
   components: {
     schemas: {
       Favorite: {
@@ -38,7 +41,13 @@ export const openapiSpec = {
         properties: {
           title: { type: 'string', minLength: 1, maxLength: 200, example: 'Anthropic' },
           description: { type: 'string', maxLength: 1000, example: 'Claude' },
-          url: { type: 'string', format: 'uri', example: 'https://anthropic.com' },
+          url: {
+            type: 'string',
+            format: 'uri',
+            pattern: '^[Hh][Tt][Tt][Pp][Ss]?://',
+            description: 'Solo se aceptan URLs http:// o https://',
+            example: 'https://anthropic.com',
+          },
         },
       },
       FavoriteUpdate: {
@@ -47,7 +56,24 @@ export const openapiSpec = {
         properties: {
           title: { type: 'string', minLength: 1, maxLength: 200 },
           description: { type: 'string', maxLength: 1000 },
-          url: { type: 'string', format: 'uri' },
+          url: {
+            type: 'string',
+            format: 'uri',
+            pattern: '^[Hh][Tt][Tt][Pp][Ss]?://',
+            description: 'Solo se aceptan URLs http:// o https://',
+          },
+        },
+      },
+      Readiness: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok', 'error'], example: 'ok' },
+          checks: {
+            type: 'object',
+            properties: {
+              database: { type: 'string', enum: ['up', 'down'], example: 'up' },
+            },
+          },
         },
       },
       Error: {
@@ -64,7 +90,7 @@ export const openapiSpec = {
               type: 'object',
               properties: {
                 path: { type: 'string', example: 'url' },
-                message: { type: 'string', example: 'La URL no es válida' },
+                message: { type: 'string', example: 'La URL debe empezar con http:// o https://' },
               },
             },
           },
@@ -77,9 +103,43 @@ export const openapiSpec = {
         content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
       },
       ValidationError: {
-        description: 'Datos de entrada inválidos',
+        description:
+          'Datos de entrada inválidos. Si el cuerpo no es JSON válido la respuesta no incluye `errors`.',
         content: {
-          'application/json': { schema: { $ref: '#/components/schemas/ValidationError' } },
+          'application/json': {
+            schema: { $ref: '#/components/schemas/ValidationError' },
+            examples: {
+              validacion: {
+                summary: 'Datos que no cumplen las reglas',
+                value: {
+                  message: 'Datos inválidos',
+                  errors: [{ path: 'url', message: 'La URL debe empezar con http:// o https://' }],
+                },
+              },
+              jsonMalformado: {
+                summary: 'Cuerpo que no es JSON válido',
+                value: { message: 'El cuerpo de la petición no es un JSON válido' },
+              },
+            },
+          },
+        },
+      },
+      PayloadTooLarge: {
+        description: 'El cuerpo supera el límite de 100 KB',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/Error' },
+            example: { message: 'El cuerpo de la petición es demasiado grande' },
+          },
+        },
+      },
+      UnsupportedMediaType: {
+        description: 'Codificación del cuerpo no soportada (charset distinto de UTF-8, etc.)',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/Error' },
+            example: { message: 'Codificación de caracteres no soportada' },
+          },
         },
       },
     },
@@ -132,6 +192,8 @@ export const openapiSpec = {
             },
           },
           400: { $ref: '#/components/responses/ValidationError' },
+          413: { $ref: '#/components/responses/PayloadTooLarge' },
+          415: { $ref: '#/components/responses/UnsupportedMediaType' },
         },
       },
     },
@@ -180,6 +242,8 @@ export const openapiSpec = {
           },
           400: { $ref: '#/components/responses/ValidationError' },
           404: { $ref: '#/components/responses/NotFound' },
+          413: { $ref: '#/components/responses/PayloadTooLarge' },
+          415: { $ref: '#/components/responses/UnsupportedMediaType' },
         },
       },
       delete: {
@@ -210,16 +274,44 @@ export const openapiSpec = {
     },
     '/health': {
       get: {
-        summary: 'Healthcheck del servicio',
+        tags: ['Salud'],
+        summary: 'Liveness: el proceso está vivo',
+        description: 'No consulta dependencias externas. Úsalo para saber si hay que reiniciar el proceso.',
         responses: {
           200: {
-            description: 'El servicio está operativo',
+            description: 'El proceso está operativo',
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
                   properties: { status: { type: 'string', example: 'ok' } },
                 },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/health/ready': {
+      get: {
+        tags: ['Salud'],
+        summary: 'Readiness: el servicio puede atender tráfico',
+        description: 'Hace ping a MongoDB (máximo 2 s). Úsalo para decidir si enviar tráfico al servicio.',
+        responses: {
+          200: {
+            description: 'Todas las dependencias están disponibles',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Readiness' },
+              },
+            },
+          },
+          503: {
+            description: 'Alguna dependencia no está disponible',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Readiness' },
+                example: { status: 'error', checks: { database: 'down' } },
               },
             },
           },

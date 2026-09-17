@@ -5,25 +5,31 @@
   "type": "module",
   "main": "src/server.js",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.9"
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
     "dev": "node --watch --env-file-if-exists=.env src/server.js",
-    "test": "node --env-file-if-exists=.env.test --test",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "test": "node --env-file-if-exists=.env.test --import ./tests/setup.js --test --test-concurrency=1 \"tests/**/*.test.js\"",
+    "test:unit": "node --env-file-if-exists=.env.test --import ./tests/setup.js --test \"tests/unit/**/*.test.js\"",
+    "test:integration": "node --env-file-if-exists=.env.test --import ./tests/setup.js --test --test-concurrency=1 \"tests/integration/**/*.test.js\"",
+    "test:coverage": "node --env-file-if-exists=.env.test --import ./tests/setup.js --test --test-concurrency=1 --experimental-test-coverage --test-coverage-exclude=\"tests/**\" --test-coverage-exclude=\"src/server.js\" --test-coverage-lines=90 --test-coverage-branches=85 --test-coverage-functions=90 \"tests/**/*.test.js\"",
+    "db:up": "docker compose up -d mongo",
+    "db:down": "docker compose down",
+    "docker:up": "docker compose up -d --build --wait",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api"
   },
   "author": "Carlos Alberto (carlosalbertoxw)",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "helmet": "^8.2.0",
-    "mongoose": "^9.7.3",
-    "morgan": "^1.11.0",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.10.1",
+    "morgan": "^1.12.1",
     "swagger-ui-express": "^5.0.1",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "supertest": "^7.2.2"

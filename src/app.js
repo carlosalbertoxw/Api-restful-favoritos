@@ -8,6 +8,7 @@ import { config } from './config.js';
 import { openapiSpec } from './docs/openapi.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { favoriteRouter } from './routes/favorite.routes.js';
+import { healthRouter } from './routes/health.routes.js';
 
 export function createApp() {
   const app = express();
@@ -30,7 +31,7 @@ export function createApp() {
   );
   app.get('/openapi.json', (_req, res) => res.json(openapiSpec));
 
-  app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+  app.use('/health', healthRouter);
   app.use('/api', favoriteRouter);
 
   app.use(notFound);
