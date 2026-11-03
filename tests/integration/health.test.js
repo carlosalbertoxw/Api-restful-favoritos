@@ -6,8 +6,7 @@ import request from 'supertest';
 
 import { createApp } from '../../src/app.js';
 import { connectDatabase, disconnectDatabase } from '../../src/db.js';
-
-const TEST_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/bookmarks_test';
+import { TEST_URI } from './helpers.js';
 
 const app = createApp();
 

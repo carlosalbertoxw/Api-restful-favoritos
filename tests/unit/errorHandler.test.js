@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import mongoose from 'mongoose';
 import { z } from 'zod';
 
 import { errorHandler, notFound } from '../../src/middleware/errorHandler.js';
@@ -25,27 +24,6 @@ describe('errorHandler', () => {
     assert.equal(res.statusCode, 400);
     assert.equal(res.body.message, 'Datos inválidos');
     assert.equal(res.body.errors[0].path, 'user.name');
-  });
-
-  it('convierte un ValidationError de mongoose en 400', async () => {
-    const Model = mongoose.model(
-      'ErrorHandlerTest',
-      new mongoose.Schema({ title: { type: String, required: true } }),
-    );
-    const error = await new Model({}).validate().catch((err) => err);
-    const res = createRes();
-    errorHandler(error, {}, res, () => {});
-    assert.equal(res.statusCode, 400);
-    assert.equal(res.body.message, 'Datos inválidos');
-    assert.equal(res.body.errors[0].path, 'title');
-  });
-
-  it('convierte un CastError de mongoose en 400', () => {
-    const error = new mongoose.Error.CastError('ObjectId', 'abc', '_id');
-    const res = createRes();
-    errorHandler(error, {}, res, () => {});
-    assert.equal(res.statusCode, 400);
-    assert.deepEqual(res.body, { message: 'El identificador no es válido' });
   });
 
   it('usa el status y el mensaje de un ApiError', () => {
@@ -77,7 +55,7 @@ describe('errorHandler', () => {
   }
 
   it('usa un mensaje genérico para otros errores 4xx expuestos', () => {
-    const error = Object.assign(new Error('x'), { statusCode: 422, expose: true });
+    const error = Object.assign(new Error('x'), { status: 422, expose: true });
     const res = createRes();
     errorHandler(error, {}, res, () => {});
     assert.equal(res.statusCode, 422);

@@ -26,6 +26,10 @@ describe('loadConfig', () => {
     assert.equal(result.corsOrigin, '*');
   });
 
+  it('usa el puerto por defecto si PORT está vacío', () => {
+    assert.equal(loadConfig({ PORT: '' }).port, 5000);
+  });
+
   it('separa y recorta la lista de orígenes CORS', () => {
     const result = loadConfig({ CORS_ORIGIN: 'https://a.com, https://b.com' });
     assert.deepEqual(result.corsOrigin, ['https://a.com', 'https://b.com']);

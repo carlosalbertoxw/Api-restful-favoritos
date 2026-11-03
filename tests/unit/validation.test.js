@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   createFavoriteSchema,
+  listQuerySchema,
   objectIdSchema,
   updateFavoriteSchema,
 } from '../../src/validation/favorite.schema.js';
@@ -179,6 +180,32 @@ describe('updateFavoriteSchema', () => {
     const result = updateFavoriteSchema.safeParse({ url: 'javascript:alert(1)' });
     assert.equal(result.success, false);
   });
+});
+
+describe('listQuerySchema', () => {
+  it('usa los valores por defecto', () => {
+    assert.deepEqual(listQuerySchema.parse({}), { limit: 100, skip: 0 });
+  });
+
+  it('convierte los parámetros de texto a número', () => {
+    assert.deepEqual(listQuerySchema.parse({ limit: '5', skip: '10' }), { limit: 5, skip: 10 });
+  });
+
+  for (const limit of ['0', '101', '1.5', 'abc', '']) {
+    it(`rechaza limit="${limit}" con un mensaje en español`, () => {
+      assert.deepEqual(messages(listQuerySchema.safeParse({ limit })), [
+        'limit debe ser un entero entre 1 y 100',
+      ]);
+    });
+  }
+
+  for (const skip of ['-1', '1.5', 'abc']) {
+    it(`rechaza skip="${skip}" con un mensaje en español`, () => {
+      assert.deepEqual(messages(listQuerySchema.safeParse({ skip })), [
+        'skip debe ser un entero mayor o igual a 0',
+      ]);
+    });
+  }
 });
 
 describe('objectIdSchema', () => {
