@@ -28,11 +28,12 @@ describe('app (sin base de datos)', () => {
     assert.ok(res.body.paths['/api/favorito/{id}']);
   });
 
-  it('GET /docs/ sirve Swagger UI', async () => {
+  it('GET /docs/ sirve Swagger UI con la CSP estricta', async () => {
     const res = await request(app).get('/docs/');
     assert.equal(res.status, 200);
     assert.match(res.headers['content-type'], /html/);
     assert.match(res.text, /API de Favoritos - Docs/);
+    assert.match(res.headers['content-security-policy'], /script-src 'self'/);
   });
 
   it('aplica cabeceras de seguridad y CORS', async () => {
@@ -52,6 +53,17 @@ describe('app (sin base de datos)', () => {
     const res = await request(app).post('/api/favorito').send({ title: '', url: 'x' });
     assert.equal(res.status, 400);
     assert.equal(res.body.message, 'Datos inválidos');
+  });
+
+  it('no interpreta formularios urlencoded', async () => {
+    const res = await request(app)
+      .post('/api/favorito')
+      .type('form')
+      .send({ title: 'A', url: 'https://a.com' });
+    assert.equal(res.status, 400);
+    assert.deepEqual(res.body.errors, [
+      { path: '', message: 'El cuerpo de la petición debe ser un objeto JSON' },
+    ]);
   });
 
   describe('cuerpos que express.json() no puede procesar', () => {

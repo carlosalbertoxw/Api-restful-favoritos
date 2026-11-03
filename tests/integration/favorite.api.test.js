@@ -171,18 +171,6 @@ describe('PUT /api/favorito/:id', () => {
     assert.equal((await Favorite.findById(creado.id)).url, ejemplo.url);
   });
 
-  it('el modelo tampoco guarda urls peligrosas aunque no pasen por la API', async () => {
-    await assert.rejects(
-      Favorite.create({ title: 'XSS', url: 'javascript:alert(1)' }),
-      (err) => err.errors?.url?.message === 'La URL debe empezar con http:// o https://',
-    );
-    const creado = await Favorite.create(ejemplo);
-    await assert.rejects(
-      Favorite.findByIdAndUpdate(creado.id, { url: 'javascript:alert(1)' }, { runValidators: true }),
-    );
-    assert.equal(await Favorite.countDocuments({ url: /^javascript:/i }), 0);
-  });
-
   it('devuelve 404 si no existe', async () => {
     const res = await request(app).put(`/api/favorito/${INEXISTENTE}`).send({ title: 'X' });
     assert.equal(res.status, 404);

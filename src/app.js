@@ -16,16 +16,16 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigin }));
   if (config.env !== 'test') {
-    app.use(morgan('dev'));
+    app.use(
+      morgan(config.env === 'production' ? 'combined' : 'dev', {
+        skip: (req) => req.originalUrl.startsWith('/health'),
+      }),
+    );
   }
   app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
 
-  // Documentación Swagger. Se relaja la CSP de helmet solo aquí porque
-  // Swagger UI necesita estilos/scripts inline para renderizarse.
   app.use(
     '/docs',
-    helmet({ contentSecurityPolicy: false }),
     swaggerUi.serve,
     swaggerUi.setup(openapiSpec, { customSiteTitle: 'API de Favoritos - Docs' }),
   );

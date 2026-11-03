@@ -32,11 +32,10 @@ export function liveness(_req, res) {
 
 // Readiness: el servicio puede atender tráfico (MongoDB disponible).
 export async function readiness(_req, res) {
-  const database = (await checkDatabase()) ? 'up' : 'down';
-  const ok = database === 'up';
+  const ok = await checkDatabase();
 
   res
     .status(ok ? 200 : 503)
     .set('Cache-Control', 'no-store')
-    .json({ status: ok ? 'ok' : 'error', checks: { database } });
+    .json({ status: ok ? 'ok' : 'error', checks: { database: ok ? 'up' : 'down' } });
 }

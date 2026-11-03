@@ -1,14 +1,11 @@
 import { z } from 'zod';
 
-// Mensajes de zod en español para cualquier error sin mensaje propio.
-z.config(z.locales.es());
-
-export const TITLE_MAX = 200;
-export const DESCRIPTION_MAX = 1000;
+const TITLE_MAX = 200;
+const DESCRIPTION_MAX = 1000;
 
 // Solo se aceptan enlaces http(s): otros esquemas (javascript:, data:, file:...)
 // permitirían XSS u otros abusos en los clientes que muestren el enlace.
-export const HTTP_URL_REGEX = /^https?:\/\//i;
+const HTTP_URL_REGEX = /^https?:\/\//i;
 
 const requiredString = (field, requiredMessage) =>
   z.string({

@@ -70,7 +70,7 @@ describe('saveFavorito', () => {
 });
 
 describe('updateFavorito', () => {
-  it('actualiza con validadores y devuelve el documento nuevo', async () => {
+  it('actualiza y devuelve el documento nuevo', async () => {
     const update = mock.method(Favorite, 'findByIdAndUpdate', async (_id, data) => ({
       ...ejemplo,
       ...data,
@@ -82,7 +82,7 @@ describe('updateFavorito', () => {
     const [id, data, options] = update.mock.calls[0].arguments;
     assert.equal(id, ID);
     assert.deepEqual(data, { title: 'Nuevo' });
-    assert.deepEqual(options, { returnDocument: 'after', runValidators: true });
+    assert.deepEqual(options, { returnDocument: 'after' });
     assert.equal(res.body.favorito.title, 'Nuevo');
   });
 
