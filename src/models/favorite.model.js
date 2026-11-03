@@ -22,4 +22,7 @@ const favoriteSchema = new Schema(
   },
 );
 
+// Soporta el orden del listado paginado.
+favoriteSchema.index({ createdAt: -1, _id: -1 });
+
 export const Favorite = model('Favorite', favoriteSchema);

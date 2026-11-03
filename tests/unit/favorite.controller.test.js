@@ -15,15 +15,41 @@ const is404 = (err) => err instanceof ApiError && err.status === 404;
 afterEach(() => mock.restoreAll());
 
 describe('getFavoritos', () => {
-  it('devuelve los marcadores ordenados por fecha descendente', async () => {
-    const sort = mock.fn(async () => [ejemplo]);
-    mock.method(Favorite, 'find', () => ({ sort }));
+  const mockFind = () => {
+    const query = {
+      sort: mock.fn(() => query),
+      skip: mock.fn(() => query),
+      limit: mock.fn(async () => [ejemplo]),
+    };
+    mock.method(Favorite, 'find', () => query);
+    return query;
+  };
+
+  it('devuelve los marcadores más recientes con el límite por defecto', async () => {
+    const query = mockFind();
     const res = createRes();
 
-    await controller.getFavoritos({}, res);
+    await controller.getFavoritos({ query: {} }, res);
 
-    assert.deepEqual(sort.mock.calls[0].arguments, ['-createdAt']);
+    assert.deepEqual(query.sort.mock.calls[0].arguments, ['-createdAt -_id']);
+    assert.deepEqual(query.skip.mock.calls[0].arguments, [0]);
+    assert.deepEqual(query.limit.mock.calls[0].arguments, [100]);
     assert.deepEqual(res.body, { favoritos: [ejemplo] });
+  });
+
+  it('aplica limit y skip de la petición', async () => {
+    const query = mockFind();
+
+    await controller.getFavoritos({ query: { limit: '5', skip: '10' } }, createRes());
+
+    assert.deepEqual(query.skip.mock.calls[0].arguments, [10]);
+    assert.deepEqual(query.limit.mock.calls[0].arguments, [5]);
+  });
+
+  it('lanza ZodError con un limit inválido sin consultar la base de datos', async () => {
+    const find = mock.method(Favorite, 'find', () => {});
+    await assert.rejects(controller.getFavoritos({ query: { limit: '0' } }, createRes()), ZodError);
+    assert.equal(find.mock.callCount(), 0);
   });
 });
 
@@ -105,14 +131,15 @@ describe('updateFavorito', () => {
 });
 
 describe('deleteFavorito', () => {
-  it('elimina el marcador', async () => {
+  it('elimina el marcador y responde 204 sin cuerpo', async () => {
     const remove = mock.method(Favorite, 'findByIdAndDelete', async () => ejemplo);
     const res = createRes();
 
     await controller.deleteFavorito({ params: { id: ID } }, res);
 
     assert.equal(remove.mock.calls[0].arguments[0], ID);
-    assert.deepEqual(res.body, { message: 'El marcador se eliminó exitosamente' });
+    assert.equal(res.statusCode, 204);
+    assert.equal(res.body, undefined);
   });
 
   it('lanza ApiError 404 si no existe', async () => {

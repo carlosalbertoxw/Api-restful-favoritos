@@ -2,6 +2,7 @@ import { Favorite } from '../models/favorite.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import {
   createFavoriteSchema,
+  listQuerySchema,
   objectIdSchema,
   updateFavoriteSchema,
 } from '../validation/favorite.schema.js';
@@ -13,8 +14,9 @@ function foundOr404(favorito) {
   return favorito;
 }
 
-export async function getFavoritos(_req, res) {
-  const favoritos = await Favorite.find().sort('-createdAt');
+export async function getFavoritos(req, res) {
+  const { limit, skip } = listQuerySchema.parse(req.query);
+  const favoritos = await Favorite.find().sort('-createdAt -_id').skip(skip).limit(limit);
   res.json({ favoritos });
 }
 
@@ -42,5 +44,5 @@ export async function updateFavorito(req, res) {
 export async function deleteFavorito(req, res) {
   const id = objectIdSchema.parse(req.params.id);
   foundOr404(await Favorite.findByIdAndDelete(id));
-  res.json({ message: 'El marcador se eliminó exitosamente' });
+  res.status(204).end();
 }

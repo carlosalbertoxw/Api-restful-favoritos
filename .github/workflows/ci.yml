@@ -72,12 +72,12 @@ jobs:
       - name: Prueba de humo del CRUD
         run: |
           set -euo pipefail
-          id=$(curl --fail -sS -X POST http://localhost:5000/api/favorito \
+          id=$(curl --fail -sS -X POST http://localhost:5000/api/favoritos \
             -H 'Content-Type: application/json' \
             -d '{"title":"Docker","url":"https://docker.com"}' | jq -r '.favorito.id')
-          curl --fail -sS "http://localhost:5000/api/favorito/$id" | jq -e '.favorito.title == "Docker"'
-          curl --fail -sS -X DELETE "http://localhost:5000/api/favorito/$id"
-          status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:5000/api/favorito/$id")
+          curl --fail -sS "http://localhost:5000/api/favoritos/$id" | jq -e '.favorito.title == "Docker"'
+          curl --fail -sS -X DELETE "http://localhost:5000/api/favoritos/$id"
+          status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:5000/api/favoritos/$id")
           test "$status" = 404
 
       - name: La API corre sin privilegios de root

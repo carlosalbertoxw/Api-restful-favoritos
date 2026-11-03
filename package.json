@@ -1,6 +1,6 @@
 {
   "name": "api-restful-favoritos",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "API RESTful de favoritos con Node.js, Express 5 y MongoDB",
   "type": "module",
   "main": "src/server.js",

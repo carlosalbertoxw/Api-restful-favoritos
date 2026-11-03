@@ -11,5 +11,8 @@ export function createRes() {
       this.body = body;
       return this;
     },
+    end() {
+      return this;
+    },
   };
 }
