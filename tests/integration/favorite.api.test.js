@@ -6,8 +6,8 @@ import request from 'supertest';
 import { createApp } from '../../src/app.js';
 import { connectDatabase, disconnectDatabase } from '../../src/db.js';
 import { Favorite } from '../../src/models/favorite.model.js';
+import { TEST_URI } from './helpers.js';
 
-const TEST_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/bookmarks_test';
 const INEXISTENTE = '64b8f0c2a1b2c3d4e5f60718';
 
 const app = createApp();

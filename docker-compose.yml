@@ -4,7 +4,8 @@ services:
     container_name: favoritos-mongo
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      # Solo en este equipo: MongoDB no tiene usuario ni contraseña.
+      - '127.0.0.1:27017:27017'
     volumes:
       - mongo-data:/data/db
     healthcheck:
