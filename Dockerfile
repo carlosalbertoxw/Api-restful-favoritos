@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Dependencias de producción ---
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # --ignore-scripts: ninguna dependencia de producción necesita scripts de
@@ -9,7 +9,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # --- Imagen final ---
-FROM node:24-alpine
+FROM node:26-alpine
 ENV NODE_ENV=production \
     PORT=5000
 WORKDIR /app
