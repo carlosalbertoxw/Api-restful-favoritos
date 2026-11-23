@@ -17,7 +17,8 @@ try {
       logger.fatal({ err: error }, 'No se pudo abrir el puerto');
       process.exit(1);
     }
-    logger.info(`Servidor escuchando en http://localhost:${config.port}`);
+    // El puerto se lee del servidor, no de la configuración (que incluye la cadena de MongoDB).
+    logger.info(`Servidor escuchando en el puerto ${server.address().port}`);
   });
 
   const shutdown = (signal) => {

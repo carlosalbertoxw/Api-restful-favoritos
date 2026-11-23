@@ -33,11 +33,24 @@ export async function createBookmark(req, res) {
   res.status(201).json({ bookmark });
 }
 
+const EDITABLE_FIELDS = ['title', 'description', 'url'];
+
 export async function updateBookmark(req, res) {
   const id = objectIdSchema.parse(req.params.id);
   const data = updateBookmarkSchema.parse(req.body);
+
+  // zod ya descarta campos desconocidos y exige texto; además, el update se arma
+  // solo con campos conocidos y valores de texto, para que ningún valor del
+  // cliente pueda llegar a MongoDB como operador (p. ej. { "$where": ... }).
+  const changes = {};
+  for (const field of EDITABLE_FIELDS) {
+    if (typeof data[field] === 'string') {
+      changes[field] = data[field];
+    }
+  }
+
   const bookmark = foundOr404(
-    await Bookmark.findByIdAndUpdate(id, data, { returnDocument: 'after' }),
+    await Bookmark.findByIdAndUpdate(id, { $set: changes }, { returnDocument: 'after' }),
   );
   res.json({ bookmark });
 }

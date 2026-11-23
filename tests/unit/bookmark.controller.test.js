@@ -108,9 +108,9 @@ describe('createBookmark', () => {
 
 describe('updateBookmark', () => {
   it('actualiza y devuelve el documento nuevo', async () => {
-    const update = mock.method(Bookmark, 'findByIdAndUpdate', async (_id, data) => ({
+    const update = mock.method(Bookmark, 'findByIdAndUpdate', async (_id, { $set }) => ({
       ...ejemplo,
-      ...data,
+      ...$set,
     }));
     const res = createRes();
 
@@ -118,7 +118,7 @@ describe('updateBookmark', () => {
 
     const [id, data, options] = update.mock.calls[0].arguments;
     assert.equal(id, ID);
-    assert.deepEqual(data, { title: 'Nuevo' });
+    assert.deepEqual(data, { $set: { title: 'Nuevo' } });
     assert.deepEqual(options, { returnDocument: 'after' });
     assert.equal(res.body.bookmark.title, 'Nuevo');
   });
@@ -129,6 +129,19 @@ describe('updateBookmark', () => {
       controller.updateBookmark({ params: { id: ID }, body: { title: 'Nuevo' } }, createRes()),
       is404,
     );
+  });
+
+  it('solo envía a MongoDB campos conocidos con valores de texto', async () => {
+    const update = mock.method(Bookmark, 'findByIdAndUpdate', async () => ejemplo);
+    await assert.rejects(
+      controller.updateBookmark({ params: { id: ID }, body: { title: { $ne: '' } } }, createRes()),
+      ZodError,
+    );
+    await controller.updateBookmark(
+      { params: { id: ID }, body: { url: 'https://a.com', $where: 'sleep(1000)' } },
+      createRes(),
+    );
+    assert.deepEqual(update.mock.calls[0].arguments[1], { $set: { url: 'https://a.com' } });
   });
 
   it('rechaza un cuerpo vacío sin consultar la base de datos', async () => {
