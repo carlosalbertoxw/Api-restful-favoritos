@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import pkg from '../../package.json' with { type: 'json' };
 import {
-  createFavoriteSchema,
+  createBookmarkSchema,
   listQuerySchema,
   objectIdSchema,
-  updateFavoriteSchema,
-} from '../validation/favorite.schema.js';
+  updateBookmarkSchema,
+} from '../validation/bookmark.schema.js';
 
 // Las reglas de entrada se generan desde zod para no repetirlas aquí.
 function toSchema(schema, io = 'input') {
@@ -42,14 +42,17 @@ const bodyErrors = {
   415: responseRef('UnsupportedMediaType'),
 };
 
+// Todas las rutas de /api comparten el límite de peticiones por minuto.
+const rateLimited = { 429: responseRef('TooManyRequests') };
+
 const idErrors = {
   400: responseRef('ValidationError'),
   404: responseRef('NotFound'),
 };
 
-const favoriteResponse = (description) => ({
+const bookmarkResponse = (description) => ({
   description,
-  content: jsonContent({ type: 'object', properties: { favorito: schemaRef('Favorite') } }),
+  content: jsonContent({ type: 'object', properties: { bookmark: schemaRef('Bookmark') } }),
 });
 
 export const openapiSpec = {
@@ -57,7 +60,10 @@ export const openapiSpec = {
   info: {
     title: 'API RESTful de Favoritos',
     version: pkg.version,
-    description: 'API para guardar páginas favoritas (marcadores).',
+    description:
+      'API para guardar páginas favoritas (marcadores).\n\n' +
+      'Las rutas de `/api` tienen un límite de peticiones por minuto y por IP (`429` al superarlo). ' +
+      'Todas las respuestas incluyen `X-Request-Id`, el mismo id que aparece en los logs.',
   },
   // Relativo para que "Try it out" funcione en cualquier host y puerto.
   servers: [{ url: '/' }],
@@ -67,7 +73,7 @@ export const openapiSpec = {
   ],
   components: {
     schemas: {
-      Favorite: {
+      Bookmark: {
         type: 'object',
         properties: {
           id: { type: 'string', example: '6a44b55a0ed255a4001f4cbe' },
@@ -78,8 +84,8 @@ export const openapiSpec = {
           updatedAt: { type: 'string', format: 'date-time' },
         },
       },
-      FavoriteInput: toSchema(createFavoriteSchema),
-      FavoriteUpdate: toSchema(updateFavoriteSchema),
+      BookmarkInput: toSchema(createBookmarkSchema),
+      BookmarkUpdate: toSchema(updateBookmarkSchema),
       Readiness: {
         type: 'object',
         properties: {
@@ -128,10 +134,14 @@ export const openapiSpec = {
         'Codificación del cuerpo no soportada (charset distinto de UTF-8, etc.)',
         'Codificación de caracteres no soportada',
       ),
+      TooManyRequests: errorResponse(
+        'Se superó el límite de peticiones por minuto. Las cabeceras RateLimit y RateLimit-Policy indican el límite y cuándo se reinicia.',
+        'Demasiadas peticiones, intenta de nuevo en un minuto',
+      ),
     },
   },
   paths: {
-    '/api/favoritos': {
+    '/api/v1/bookmarks': {
       get: {
         tags: ['Favoritos'],
         summary: 'Lista los marcadores, del más reciente al más antiguo',
@@ -141,38 +151,52 @@ export const openapiSpec = {
             description: 'Lista de marcadores',
             content: jsonContent({
               type: 'object',
-              properties: { favoritos: { type: 'array', items: schemaRef('Favorite') } },
+              properties: {
+                bookmarks: { type: 'array', items: schemaRef('Bookmark') },
+                hasMore: {
+                  type: 'boolean',
+                  description: 'true si hay más marcadores después de esta página',
+                  example: false,
+                },
+              },
+              required: ['bookmarks', 'hasMore'],
             }),
           },
           400: responseRef('ValidationError'),
+          ...rateLimited,
         },
       },
       post: {
         tags: ['Favoritos'],
         summary: 'Crea un marcador',
-        requestBody: { required: true, content: jsonContent(schemaRef('FavoriteInput')) },
-        responses: { 201: favoriteResponse('Marcador creado'), ...bodyErrors },
+        requestBody: { required: true, content: jsonContent(schemaRef('BookmarkInput')) },
+        responses: { 201: bookmarkResponse('Marcador creado'), ...bodyErrors, ...rateLimited },
       },
     },
-    '/api/favoritos/{id}': {
+    '/api/v1/bookmarks/{id}': {
       get: {
         tags: ['Favoritos'],
         summary: 'Obtiene un marcador por su id',
         parameters: [idParam],
-        responses: { 200: favoriteResponse('Marcador encontrado'), ...idErrors },
+        responses: { 200: bookmarkResponse('Marcador encontrado'), ...idErrors, ...rateLimited },
       },
       patch: {
         tags: ['Favoritos'],
         summary: 'Actualiza los campos enviados de un marcador',
         parameters: [idParam],
-        requestBody: { required: true, content: jsonContent(schemaRef('FavoriteUpdate')) },
-        responses: { 200: favoriteResponse('Marcador actualizado'), ...bodyErrors, ...idErrors },
+        requestBody: { required: true, content: jsonContent(schemaRef('BookmarkUpdate')) },
+        responses: {
+          200: bookmarkResponse('Marcador actualizado'),
+          ...bodyErrors,
+          ...idErrors,
+          ...rateLimited,
+        },
       },
       delete: {
         tags: ['Favoritos'],
         summary: 'Elimina un marcador',
         parameters: [idParam],
-        responses: { 204: { description: 'Marcador eliminado' }, ...idErrors },
+        responses: { 204: { description: 'Marcador eliminado' }, ...idErrors, ...rateLimited },
       },
     },
     '/health': {

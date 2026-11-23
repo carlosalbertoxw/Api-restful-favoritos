@@ -17,7 +17,7 @@ const requiredString = (field, requiredMessage) =>
     error: (issue) => (issue.input === undefined ? requiredMessage : `${field} debe ser texto`),
   });
 
-export const createFavoriteSchema = z.object(
+export const createBookmarkSchema = z.object(
   {
     title: requiredString('El título', 'El título es obligatorio')
       .trim()
@@ -44,7 +44,7 @@ export const createFavoriteSchema = z.object(
   { error: 'El cuerpo de la petición debe ser un objeto JSON' },
 );
 
-export const updateFavoriteSchema = createFavoriteSchema
+export const updateBookmarkSchema = createBookmarkSchema
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Debes enviar al menos un campo para actualizar',

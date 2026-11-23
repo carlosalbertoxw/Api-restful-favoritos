@@ -26,9 +26,17 @@ services:
     environment:
       # "mongo" es el nombre del servicio dentro de la red de Docker.
       MONGODB_URI: mongodb://mongo:27017/bookmarks
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-100}
+      # Confía en X-Forwarded-For solo si la petición llega desde la red privada de Docker
+      # (el nginx del frontend o el puerto publicado en 127.0.0.1).
+      TRUST_PROXY: uniquelocal
     ports:
-      - '5000:5000'
+      # Solo en este equipo: la API no tiene autenticación.
+      - '127.0.0.1:5000:5000'
 
 volumes:
   mongo-data:
+    # Nombre fijo para compartir los datos cuando el frontend incluye este archivo
+    # (Compose le pondría el prefijo de ese otro proyecto).
+    name: api-restful-favoritos_mongo-data

@@ -36,6 +36,7 @@ export function errorHandler(err, _req, res, _next) {
     return res.status(err.status).json({ message });
   }
 
-  console.error(err);
+  // pino-http registra res.err (con su stack y el id de la petición) al terminar la respuesta.
+  res.err = err;
   return res.status(500).json({ message: 'Error interno del servidor' });
 }

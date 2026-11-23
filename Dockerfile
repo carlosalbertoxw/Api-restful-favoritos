@@ -14,6 +14,10 @@ ENV NODE_ENV=production \
     PORT=5000
 WORKDIR /app
 
+# En ejecución solo se usa node: npm, npx y corepack sobran y arrastran
+# vulnerabilidades de sus propias dependencias.
+RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src

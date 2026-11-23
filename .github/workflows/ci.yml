@@ -84,16 +84,26 @@ jobs:
       - name: Prueba de humo del CRUD
         run: |
           set -euo pipefail
-          id=$(curl --fail -sS -X POST http://localhost:5000/api/favoritos \
+          id=$(curl --fail -sS -X POST http://localhost:5000/api/v1/bookmarks \
             -H 'Content-Type: application/json' \
-            -d '{"title":"Docker","url":"https://docker.com"}' | jq -r '.favorito.id')
-          curl --fail -sS "http://localhost:5000/api/favoritos/$id" | jq -e '.favorito.title == "Docker"'
-          curl --fail -sS -X DELETE "http://localhost:5000/api/favoritos/$id"
-          status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:5000/api/favoritos/$id")
+            -d '{"title":"Docker","url":"https://docker.com"}' | jq -r '.bookmark.id')
+          curl --fail -sS "http://localhost:5000/api/v1/bookmarks/$id" | jq -e '.bookmark.title == "Docker"'
+          curl --fail -sS "http://localhost:5000/api/v1/bookmarks" | jq -e '.hasMore == false'
+          curl --fail -sS -X DELETE "http://localhost:5000/api/v1/bookmarks/$id"
+          status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:5000/api/v1/bookmarks/$id")
           test "$status" = 404
 
       - name: La API corre sin privilegios de root
         run: test "$(docker compose exec -T api id -u)" != "0"
+
+      - name: Escanear la imagen con Trivy (vulnerabilidades altas o críticas con parche)
+        # Fijada por el SHA del commit de v0.36.0: una etiqueta movida no cambia lo que se ejecuta.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: api-restful-favoritos
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
 
       - name: Logs de los contenedores
         if: failure()

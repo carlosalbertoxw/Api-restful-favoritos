@@ -41,8 +41,7 @@ describe('errorHandler', () => {
   ];
 
   for (const [type, status, message] of bodyParserCases) {
-    it(`convierte el error "${type}" de body-parser en ${status}`, (t) => {
-      const consoleError = t.mock.method(console, 'error', () => {});
+    it(`convierte el error "${type}" de body-parser en ${status}`, () => {
       const error = Object.assign(new Error('detalle interno'), { type, status, expose: true });
       const res = createRes();
 
@@ -50,7 +49,7 @@ describe('errorHandler', () => {
 
       assert.equal(res.statusCode, status);
       assert.deepEqual(res.body, { message });
-      assert.equal(consoleError.mock.callCount(), 0);
+      assert.equal(res.err, undefined);
     });
   }
 
@@ -62,8 +61,7 @@ describe('errorHandler', () => {
     assert.deepEqual(res.body, { message: 'Petición inválida' });
   });
 
-  it('no expone errores 5xx aunque traigan status', (t) => {
-    t.mock.method(console, 'error', () => {});
+  it('no expone errores 5xx aunque traigan status', () => {
     const error = Object.assign(new Error('fallo'), { status: 503, expose: true });
     const res = createRes();
     errorHandler(error, {}, res, () => {});
@@ -71,21 +69,21 @@ describe('errorHandler', () => {
     assert.deepEqual(res.body, { message: 'Error interno del servidor' });
   });
 
-  it('no expone errores 4xx no marcados como expose', (t) => {
-    t.mock.method(console, 'error', () => {});
+  it('no expone errores 4xx no marcados como expose', () => {
     const error = Object.assign(new Error('fallo'), { status: 400 });
     const res = createRes();
     errorHandler(error, {}, res, () => {});
     assert.equal(res.statusCode, 500);
   });
 
-  it('responde 500 sin filtrar detalles ante errores inesperados', (t) => {
-    const consoleError = t.mock.method(console, 'error', () => {});
+  it('responde 500 sin filtrar detalles y deja el error para el log', () => {
+    const error = new Error('secreto interno');
     const res = createRes();
-    errorHandler(new Error('secreto interno'), {}, res, () => {});
+    errorHandler(error, {}, res, () => {});
     assert.equal(res.statusCode, 500);
     assert.deepEqual(res.body, { message: 'Error interno del servidor' });
-    assert.equal(consoleError.mock.callCount(), 1);
+    // pino-http lo registra al terminar la respuesta.
+    assert.equal(res.err, error);
   });
 });
 

@@ -2,17 +2,17 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  createFavoriteSchema,
+  createBookmarkSchema,
   listQuerySchema,
   objectIdSchema,
-  updateFavoriteSchema,
-} from '../../src/validation/favorite.schema.js';
+  updateBookmarkSchema,
+} from '../../src/validation/bookmark.schema.js';
 
 const messages = (result) => result.error.issues.map((issue) => issue.message);
 
-describe('createFavoriteSchema', () => {
+describe('createBookmarkSchema', () => {
   it('acepta un marcador válido y recorta espacios', () => {
-    const data = createFavoriteSchema.parse({
+    const data = createBookmarkSchema.parse({
       title: '  Google  ',
       description: ' Buscador ',
       url: ' https://google.com ',
@@ -25,17 +25,17 @@ describe('createFavoriteSchema', () => {
   });
 
   it('permite omitir la descripción', () => {
-    const result = createFavoriteSchema.safeParse({ title: 'A', url: 'https://a.com' });
+    const result = createBookmarkSchema.safeParse({ title: 'A', url: 'https://a.com' });
     assert.equal(result.success, true);
   });
 
   it('elimina campos desconocidos', () => {
-    const data = createFavoriteSchema.parse({ title: 'A', url: 'https://a.com', admin: true });
+    const data = createBookmarkSchema.parse({ title: 'A', url: 'https://a.com', admin: true });
     assert.equal('admin' in data, false);
   });
 
   it('exige título y url', () => {
-    const result = createFavoriteSchema.safeParse({});
+    const result = createBookmarkSchema.safeParse({});
     assert.equal(result.success, false);
     const paths = result.error.issues.map((issue) => issue.path.join('.'));
     assert.ok(paths.includes('title'));
@@ -43,18 +43,18 @@ describe('createFavoriteSchema', () => {
   });
 
   it('rechaza un título vacío o solo con espacios', () => {
-    const result = createFavoriteSchema.safeParse({ title: '   ', url: 'https://a.com' });
+    const result = createBookmarkSchema.safeParse({ title: '   ', url: 'https://a.com' });
     assert.equal(result.success, false);
     assert.equal(result.error.issues[0].message, 'El título es obligatorio');
   });
 
   it('rechaza un título de más de 200 caracteres', () => {
-    const result = createFavoriteSchema.safeParse({ title: 'a'.repeat(201), url: 'https://a.com' });
+    const result = createBookmarkSchema.safeParse({ title: 'a'.repeat(201), url: 'https://a.com' });
     assert.equal(result.success, false);
   });
 
   it('rechaza una descripción de más de 1000 caracteres', () => {
-    const result = createFavoriteSchema.safeParse({
+    const result = createBookmarkSchema.safeParse({
       title: 'A',
       url: 'https://a.com',
       description: 'a'.repeat(1001),
@@ -63,13 +63,13 @@ describe('createFavoriteSchema', () => {
   });
 
   it('rechaza una url sin esquema http(s)', () => {
-    const result = createFavoriteSchema.safeParse({ title: 'A', url: 'no-es-url' });
+    const result = createBookmarkSchema.safeParse({ title: 'A', url: 'no-es-url' });
     assert.equal(result.success, false);
     assert.equal(result.error.issues[0].message, 'La URL debe empezar con http:// o https://');
   });
 
   it('rechaza una url http(s) que no se puede interpretar', () => {
-    const result = createFavoriteSchema.safeParse({ title: 'A', url: 'https://' });
+    const result = createBookmarkSchema.safeParse({ title: 'A', url: 'https://' });
     assert.equal(result.success, false);
     assert.deepEqual(messages(result), ['La URL no es válida']);
   });
@@ -82,7 +82,7 @@ describe('createFavoriteSchema', () => {
     ];
     for (const url of permitidas) {
       it(`acepta ${url}`, () => {
-        assert.equal(createFavoriteSchema.safeParse({ title: 'A', url }).success, true);
+        assert.equal(createBookmarkSchema.safeParse({ title: 'A', url }).success, true);
       });
     }
 
@@ -100,7 +100,7 @@ describe('createFavoriteSchema', () => {
     ];
     for (const url of rechazadas) {
       it(`rechaza ${url}`, () => {
-        const result = createFavoriteSchema.safeParse({ title: 'A', url });
+        const result = createBookmarkSchema.safeParse({ title: 'A', url });
         assert.equal(result.success, false);
         assert.deepEqual(messages(result), ['La URL debe empezar con http:// o https://']);
       });
@@ -109,17 +109,17 @@ describe('createFavoriteSchema', () => {
 
   describe('mensajes en español', () => {
     it('indica los campos obligatorios que faltan', () => {
-      const result = createFavoriteSchema.safeParse({});
+      const result = createBookmarkSchema.safeParse({});
       assert.deepEqual(messages(result), ['El título es obligatorio', 'La URL es obligatoria']);
     });
 
     it('indica una URL vacía como obligatoria', () => {
-      const result = createFavoriteSchema.safeParse({ title: 'A', url: '   ' });
+      const result = createBookmarkSchema.safeParse({ title: 'A', url: '   ' });
       assert.deepEqual(messages(result), ['La URL es obligatoria']);
     });
 
     it('indica tipos incorrectos', () => {
-      const result = createFavoriteSchema.safeParse({ title: 1, description: 2, url: 3 });
+      const result = createBookmarkSchema.safeParse({ title: 1, description: 2, url: 3 });
       assert.deepEqual(messages(result), [
         'El título debe ser texto',
         'La descripción debe ser texto',
@@ -128,7 +128,7 @@ describe('createFavoriteSchema', () => {
     });
 
     it('indica las longitudes máximas', () => {
-      const result = createFavoriteSchema.safeParse({
+      const result = createBookmarkSchema.safeParse({
         title: 'a'.repeat(201),
         description: 'a'.repeat(1001),
         url: 'https://a.com',
@@ -141,10 +141,10 @@ describe('createFavoriteSchema', () => {
 
     for (const body of ['hola', null, [], 42]) {
       it(`rechaza un cuerpo que no es objeto: ${JSON.stringify(body)}`, () => {
-        assert.deepEqual(messages(createFavoriteSchema.safeParse(body)), [
+        assert.deepEqual(messages(createBookmarkSchema.safeParse(body)), [
           'El cuerpo de la petición debe ser un objeto JSON',
         ]);
-        assert.deepEqual(messages(updateFavoriteSchema.safeParse(body)), [
+        assert.deepEqual(messages(updateBookmarkSchema.safeParse(body)), [
           'El cuerpo de la petición debe ser un objeto JSON',
         ]);
       });
@@ -153,7 +153,7 @@ describe('createFavoriteSchema', () => {
     it('no deja mensajes en inglés en ningún caso probado', () => {
       const casos = [{}, 'x', { title: 1, url: 1, description: 1 }, { title: 'a'.repeat(300), url: '' }];
       for (const caso of casos) {
-        for (const message of messages(createFavoriteSchema.safeParse(caso))) {
+        for (const message of messages(createBookmarkSchema.safeParse(caso))) {
           assert.doesNotMatch(message, /invalid|expected|received|too big|too small/i);
         }
       }
@@ -161,23 +161,23 @@ describe('createFavoriteSchema', () => {
   });
 });
 
-describe('updateFavoriteSchema', () => {
+describe('updateBookmarkSchema', () => {
   it('acepta una actualización parcial', () => {
-    assert.deepEqual(updateFavoriteSchema.parse({ title: 'Nuevo' }), { title: 'Nuevo' });
+    assert.deepEqual(updateBookmarkSchema.parse({ title: 'Nuevo' }), { title: 'Nuevo' });
   });
 
   it('rechaza un cuerpo vacío', () => {
-    const result = updateFavoriteSchema.safeParse({});
+    const result = updateBookmarkSchema.safeParse({});
     assert.equal(result.success, false);
     assert.equal(result.error.issues[0].message, 'Debes enviar al menos un campo para actualizar');
   });
 
   it('valida los campos que sí se envían', () => {
-    assert.equal(updateFavoriteSchema.safeParse({ url: 'mal' }).success, false);
+    assert.equal(updateBookmarkSchema.safeParse({ url: 'mal' }).success, false);
   });
 
   it('no permite cambiar la url a un esquema peligroso', () => {
-    const result = updateFavoriteSchema.safeParse({ url: 'javascript:alert(1)' });
+    const result = updateBookmarkSchema.safeParse({ url: 'javascript:alert(1)' });
     assert.equal(result.success, false);
   });
 });

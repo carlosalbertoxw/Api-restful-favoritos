@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
 
-// Las reglas de los campos viven en validation/favorite.schema.js.
-const favoriteSchema = new Schema(
+// Las reglas de los campos viven en validation/bookmark.schema.js.
+const bookmarkSchema = new Schema(
   {
     title: { type: String, required: true },
     description: { type: String, default: '' },
@@ -23,6 +23,6 @@ const favoriteSchema = new Schema(
 );
 
 // Soporta el orden del listado paginado.
-favoriteSchema.index({ createdAt: -1, _id: -1 });
+bookmarkSchema.index({ createdAt: -1, _id: -1 });
 
-export const Favorite = model('Favorite', favoriteSchema);
+export const Bookmark = model('Bookmark', bookmarkSchema);
