@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { connectDatabase, disconnectDatabase } from './db.js';
+import { logger } from './logger.js';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -8,29 +9,29 @@ const app = createApp();
 
 try {
   await connectDatabase();
-  console.log('✅ Conexión a MongoDB establecida');
+  logger.info('Conexión a MongoDB establecida');
 
   // Express 5 también llama a este callback si no puede abrir el puerto.
   const server = app.listen(config.port, (error) => {
     if (error) {
-      console.error('❌ No se pudo abrir el puerto:', error);
+      logger.fatal({ err: error }, 'No se pudo abrir el puerto');
       process.exit(1);
     }
-    console.log(`🚀 Servidor escuchando en http://localhost:${config.port}`);
+    logger.info(`Servidor escuchando en http://localhost:${config.port}`);
   });
 
   const shutdown = (signal) => {
-    console.log(`\n${signal} recibido, cerrando servidor...`);
+    logger.info(`${signal} recibido, cerrando servidor...`);
     // Fuerza la salida si una conexión no termina a tiempo.
     setTimeout(() => process.exit(1), SHUTDOWN_TIMEOUT_MS).unref();
 
     server.close(async () => {
       try {
         await disconnectDatabase();
-        console.log('👋 Conexiones cerradas. Hasta luego.');
+        logger.info('Conexiones cerradas');
         process.exit(0);
       } catch (error) {
-        console.error('❌ Error al cerrar la conexión a MongoDB:', error);
+        logger.error({ err: error }, 'Error al cerrar la conexión a MongoDB');
         process.exit(1);
       }
     });
@@ -40,6 +41,6 @@ try {
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
 } catch (error) {
-  console.error('❌ No se pudo iniciar el servidor:', error);
+  logger.fatal({ err: error }, 'No se pudo iniciar el servidor');
   process.exit(1);
 }
